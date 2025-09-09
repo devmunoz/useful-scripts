@@ -1,0 +1,2 @@
+#!/bin/bash
+grep -Rns -A 2 "\"name\": \"\(ansi.regex\|ansi.styles\|backslash\|chalk\|chalk.template\|color.convert\|color.name\|color.string\|debug\|error.ex\|has.ansi\|is.arrayish\|proto.tinker.wc\|supports.hyperlinks\|simple.swizzle\|slice.ansi\|strip.ansi\|supports.color\|supports.hyperlinks\|wrap.ansi\|coveops.abi\|duckdb.duckdb.wasm\|duckdb.node.api\|duckdb.node.bindings\|duckdb\|prebid\|prebid\)\"," node_modules | grep "\"\(name\|version\)\"" &> packagesversions.txt
