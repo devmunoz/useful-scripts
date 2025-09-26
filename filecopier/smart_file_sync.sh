@@ -176,32 +176,54 @@ sync_files() {
     log "INFO" "Origin directory: $origin_dir"
     log "INFO" "Target directory: $target_dir"
     
+    # Change to origin directory to avoid permission issues with find
+    local original_pwd="$PWD"
+    cd "$origin_dir" 2>/dev/null || {
+        log "ERROR" "Cannot change to origin directory: $origin_dir"
+        return 1
+    }
+    
     # Find all files in origin directory (excluding hidden files and directories)
     while IFS= read -r -d '' file; do
-        if [[ -f "$file" ]]; then
+        # Convert relative path back to absolute
+        local abs_file="$origin_dir/$file"
+        if [[ -f "$abs_file" ]]; then
             TOTAL_FILES=$((TOTAL_FILES + 1))
             if [[ "$VERBOSE" == "true" ]]; then
-                log "DEBUG" "Processing: ${file#$origin_dir/}"
+                log "DEBUG" "Processing: $file"
             fi
-            process_file "$file" "$origin_dir" "$target_dir"
+            process_file "$abs_file" "$origin_dir" "$target_dir"
         fi
-    done < <(find "$origin_dir" -type f -not -path '*/.*' -print0)
+    done < <(find . -type f -not -path './.*' -print0 2>/dev/null)
+    
+    # Return to original directory
+    cd "$original_pwd" 2>/dev/null || true
 }
 
 # Function to remove empty directories
 cleanup_empty_dirs() {
     local origin_dir="$1"
+    local original_pwd="$PWD"
+    
+    # Change to origin directory to avoid permission issues
+    cd "$origin_dir" 2>/dev/null || {
+        log "WARN" "Cannot change to origin directory for cleanup: $origin_dir"
+        return 0
+    }
     
     if [[ "$DRY_RUN" == "false" ]]; then
         # Remove empty directories (bottom-up) but exclude the origin directory itself
-        find "$origin_dir" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+        find . -mindepth 1 -type d -empty -delete 2>/dev/null || true
         log "INFO" "Cleaned up empty directories"
     else
-        local empty_dirs=$(find "$origin_dir" -mindepth 1 -type d -empty 2>/dev/null | wc -l)
+        local empty_dirs=$(find . -mindepth 1 -type d -empty 2>/dev/null | wc -l)
         if [[ "$empty_dirs" -gt 0 ]]; then
             log "INFO" "Would clean up $empty_dirs empty directories"
         fi
     fi
+    
+    # Return to original directory
+    cd "$original_pwd" 2>/dev/null || true
 }
 
 # Main function
@@ -253,6 +275,9 @@ main() {
     
     local ORIGIN_DIR="$1"
     local TARGET_DIR="$2"
+    
+    # Change to a safe directory to avoid permission issues
+    cd /tmp 2>/dev/null || cd / 2>/dev/null || true
     
     # Validate directories
     if [[ ! -d "$ORIGIN_DIR" ]]; then
