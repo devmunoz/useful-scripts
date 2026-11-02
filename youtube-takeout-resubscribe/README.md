@@ -1,147 +1,147 @@
 # YouTube Takeout Resubscribe 📺
 
-Script en Python con **Playwright** para migrar automáticamente tus suscripciones de YouTube a una nueva cuenta a partir del archivo CSV generado por **Google Takeout**.
+A Python automation script using **Playwright** to seamlessly transfer your YouTube channel subscriptions to a new Google account using the CSV export from **Google Takeout**.
 
-A diferencia de soluciones que usan la API oficial de YouTube (la cual tiene cuotas diarias muy estrictas que solo permiten suscribirte a unos pocos canales al día), este script automatiza la interacción en un navegador real (**Brave**, **Chrome** o **Chromium**), permitiéndote iniciar sesión manualmente y suscribirte con pausas seguras anti-bloqueo.
-
----
-
-## 🚀 Características
-
-- **Inicio de sesión interactivo y seguro**: Levanta una ventana de navegador real para que hagas login manualmente en tu cuenta nueva de Google/YouTube.
-- **Detección automática de sesión**: El script detecta por sí solo cuando terminas el login.
-- **Persistencia de sesión**: Guarda el perfil en un directorio local (`.browser_data/`). No necesitas volver a loguearte en ejecuciones posteriores.
-- **Modo prueba por defecto**: Procesa primero 1 solo canal para verificar que todo funciona antes de lanzar la lista completa.
-- **Reanudable (Idempotente)**: Guarda los canales completados en `subscribed_channels.txt`. Si se interrumpe, continuará donde lo dejó.
-- **Pausas humanas**: Intervalos aleatorios configurables entre suscripciones para evitar bloqueos por spam o rate limits de YouTube.
-- **Multiplataforma**: Compatible con macOS, Linux y Windows.
+Unlike solutions that rely on the official YouTube Data API (which enforces strict daily quota limits that restrict you to only a few subscriptions per day), this script automates a real browser (**Brave**, **Chrome**, or **Chromium**). This allows you to log in manually, handles bot detection gracefully, and applies anti-rate-limit delays.
 
 ---
 
-## 📋 Requisitos Previos
+## 🚀 Features
 
-- **Python 3.8 o superior**.
-- Navegador **Brave Browser** o **Google Chrome** instalado en tu sistema (recomendado para evitar las restricciones de Google sobre navegadores automatizados).
-
----
-
-## 📦 Paso 1: Exportar tus suscripciones con Google Takeout
-
-1. Accede a [Google Takeout](https://takeout.google.com/) con tu **cuenta antigua** (la que tiene las suscripciones).
-2. Haz clic en **"Desmarcar todo"**.
-3. Baja hasta la categoría **"YouTube y YouTube Music"** y márcala.
-4. Pulsa sobre el botón **"Se han incluido todos los datos de YouTube"**:
-   - Pulsa **"Desmarcar todo"**.
-   - Marca únicamente la opción **"suscripciones"** (`subscriptions`).
-   - Pulsa **"Aceptar"**.
-5. Haz clic en **"Siguiente paso"**, selecciona entrega por correo o descarga directa y pulsa **"Crear exportación"**.
-6. Descarga y descomprime el archivo `.zip`.
-7. En la carpeta `Takeout/YouTube and YouTube Music/subscriptions/` encontrarás el archivo **`subscriptions.csv`**.
-8. Copia `subscriptions.csv` dentro de la carpeta de este script.
+- **Interactive & Secure Login**: Launches a real browser window so you can safely log into your new Google/YouTube account.
+- **Automatic Login Detection**: Automatically detects when you have successfully logged in (or press `Enter` in the console).
+- **Persistent Session**: Saves browser profile and session cookies locally (`.browser_data/`), so you never need to log in again on future runs.
+- **Safe Test Mode by Default**: Subscribes to only 1 channel on the first run to verify the flow before processing your entire list.
+- **Resumable / Idempotent**: Tracks processed channels in `subscribed_channels.txt`. If interrupted, it seamlessly picks up right where it left off.
+- **Human-like Delays**: Configurable random intervals between subscription actions to protect your account against YouTube spam flags and rate limits.
+- **Cross-Platform**: Works smoothly on macOS, Linux, and Windows.
 
 ---
 
-## 🛠️ Paso 2: Instalación del entorno
+## 📋 Prerequisites
 
-Abre una terminal en la carpeta de este proyecto y sigue estos pasos:
+- **Python 3.8+**
+- **Brave Browser** or **Google Chrome** installed (strongly recommended to avoid Google's "Insecure browser" block on automated sessions).
 
-### 1. Crear y activar el entorno virtual (`.venv`):
+---
 
-**En macOS / Linux:**
+## 📦 Step 1: Export Subscriptions via Google Takeout
+
+1. Visit [Google Takeout](https://takeout.google.com/) while logged into your **old account** (the one with your current subscriptions).
+2. Click **"Deselect all"**.
+3. Scroll down to find **"YouTube and YouTube Music"** and select it.
+4. Click **"All YouTube data included"**:
+   - Click **"Deselect all"**.
+   - Select only **"subscriptions"**.
+   - Click **"OK"**.
+5. Click **"Next step"**, choose delivery method / download link, and click **"Create export"**.
+6. Download and extract the `.zip` archive.
+7. Inside `Takeout/YouTube and YouTube Music/subscriptions/`, locate **`subscriptions.csv`**.
+8. Copy `subscriptions.csv` into this script's directory.
+
+---
+
+## 🛠️ Step 2: Environment Setup
+
+Open your terminal in this directory and run:
+
+### 1. Create and activate a virtual environment (`.venv`):
+
+**On macOS / Linux:**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-**En Windows:**
+**On Windows:**
 ```powershell
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-### 2. Instalar dependencias:
+### 2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-*(Opcional si no tienes Brave ni Chrome instalados y quieres usar el Chromium interno de Playwright):*
+*(Optional: only if you do not have Brave or Chrome installed and want Playwright to download bundled Chromium):*
 ```bash
 playwright install chromium
 ```
 
 ---
 
-## 💻 Paso 3: Ejecución
+## 💻 Step 3: Usage
 
-### 1. Prueba inicial (1 canal)
+### 1. Initial Test Run (1 Channel)
 
-Por seguridad, la ejecución por defecto procesa **solo 1 canal**:
+By default, the script runs in test mode and subscribes to **only 1 channel**:
 
 ```bash
 python subscribe.py
 ```
 
-**Flujo de ejecución:**
-1. Se abrirá una ventana de navegador.
-2. Si es la primera vez, verás la página de YouTube. Haz clic en **"Acceder"** e inicia sesión con tu **nueva cuenta**.
-3. En cuanto inicies sesión, el script detectará el avatar/perfil y te avisará por la terminal.
-4. Navegará al primer canal del CSV y pulsará el botón de suscripción.
-5. Verás en la terminal el mensaje de confirmación y el navegador se cerrará guardando tu sesión.
+**What happens:**
+1. A browser window opens on YouTube.
+2. If this is your first run, click **"Sign in"** and log in with your **new account**.
+3. As soon as you log in, the script detects your avatar/session and notifies you in the terminal.
+4. It navigates to the first channel in the CSV and clicks the subscribe button.
+5. You will see a success confirmation, and the browser closes while preserving your login session.
 
-### 2. Suscribirse a todos los canales restantes
+### 2. Subscribing to All Remaining Channels
 
-Una vez verificada la prueba, lanza el script con el flag `--all`:
+Once you've verified that the test subscription succeeded, process all remaining channels:
 
 ```bash
 python subscribe.py --all
 ```
 
-El script omitirá los canales a los que ya te hayas suscrito previamente y continuará con el resto, aplicando una pausa de 3 a 6 segundos entre cada uno.
+The script will automatically skip channels that were already processed and subscribe to the rest, pausing for 3 to 6 seconds between each channel.
 
 ---
 
-## ⚙️ Opciones avanzadas de línea de comandos
+## ⚙️ Command-Line Options
 
-Puedes personalizar la ejecución con los siguientes argumentos:
+You can customize execution using flags:
 
-| Parámetro | Valor por defecto | Descripción |
+| Argument | Default | Description |
 |---|---|---|
-| `--all` | `False` | Procesa **todos** los canales pendientes del CSV. |
-| `--limit N` | `1` | Procesa como máximo `N` canales pendientes. |
-| `--csv RUTA` | `subscriptions.csv` | Ruta alternativa al archivo CSV de suscripciones. |
-| `--delay-min SEGS` | `3.0` | Segundos mínimos de espera entre suscripciones. |
-| `--delay-max SEGS` | `6.0` | Segundos máximos de espera entre suscripciones. |
-| `--browser TIPO` | `auto` | Navegador a usar: `auto`, `brave`, `chrome` o `chromium`. |
-| `--user-data-dir RUTA` | `./.browser_data` | Directorio donde se guardan cookies y sesión. |
+| `--all` | `False` | Process **all** pending channels in the CSV. |
+| `--limit N` | `1` | Process at most `N` channels in this run. |
+| `--csv PATH` | `subscriptions.csv` | Custom path to the subscriptions CSV file. |
+| `--delay-min SECS` | `3.0` | Minimum delay between subscriptions in seconds. |
+| `--delay-max SECS` | `6.0` | Maximum delay between subscriptions in seconds. |
+| `--browser TYPE` | `auto` | Preferred browser: `auto`, `brave`, `chrome`, or `chromium`. |
+| `--user-data-dir PATH` | `./.browser_data` | Directory where browser session data and cookies are stored. |
 
-### Ejemplos:
+### Examples:
 
-Procesar 10 canales con pausas más largas:
+Process 10 channels with longer safety delays:
 ```bash
 python subscribe.py --limit 10 --delay-min 5.0 --delay-max 10.0
 ```
 
-Indicar una ruta personalizada para el CSV:
+Specify a custom path to your CSV:
 ```bash
-python subscribe.py --all --csv /ruta/a/mi_takeout/subscriptions.csv
+python subscribe.py --all --csv /path/to/my_takeout/subscriptions.csv
 ```
 
 ---
 
-## 📁 Archivos generados localmente
+## 📁 Generated Files
 
-- `.browser_data/`: Perfil de navegador persistente con tu sesión iniciada de Google/YouTube.
-- `subscribed_channels.txt`: Lista con los IDs de los canales a los que ya se ha suscrito con éxito. Si quieres empezar de cero, simplemente borra este archivo.
+- `.browser_data/`: Persistent browser profile directory storing your logged-in Google/YouTube session.
+- `subscribed_channels.txt`: Record of channel IDs successfully processed. To reset progress, simply delete this file.
 
 ---
 
-## ❓ Preguntas Frecuentes y Solución de Problemas
+## ❓ FAQ & Troubleshooting
 
-#### Google bloquea el inicio de sesión diciendo "Navegador no seguro"
-Esto ocurre cuando se utiliza un Chromium automatizado estándar. Este script utiliza por defecto **Brave** o **Chrome** con el flag `--disable-blink-features=AutomationControlled` para que Google lo identifique como una sesión normal de usuario. Asegúrate de tener instalado Brave o Google Chrome.
+#### Google blocks login with "This browser or app may not be secure"
+This error occurs when using standard unbranded automated Chromium. This script uses **Brave** or **Google Chrome** with `--disable-blink-features=AutomationControlled` to replicate a genuine user session. Ensure Brave or Google Chrome is installed on your machine.
 
-#### ¿Qué pasa si se corta la conexión o cierro la ventana a mitad del proceso?
-No pasa nada. El script registra cada canal completado en `subscribed_channels.txt`. La próxima vez que ejecutes `python subscribe.py --all`, continuará automáticamente por el siguiente canal pendiente.
+#### What if my connection drops or I stop the script midway?
+No problem! The script records every completed subscription in `subscribed_channels.txt`. Running `python subscribe.py --all` again will pick up right where it stopped without duplicating subscriptions.
 
-#### ¿Puedo aumentar la velocidad quitando las pausas?
-No es recomendable. YouTube detecta patrones de suscripciones demasiado rápidas e inhabilita temporalmente el botón de suscripción en tu cuenta. El rango de 3 a 6 segundos por defecto es seguro y fiable.
+#### Can I speed it up by removing delays?
+Not recommended. YouTube detects unusually rapid subscription bursts and will temporarily lock the subscribe action on your account. The default 3 to 6 second pause is safe and reliable.

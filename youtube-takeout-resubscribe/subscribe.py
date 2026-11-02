@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 YouTube Subscriptions Migrator (Takeout -> New Account)
-Automatiza la suscripción a canales de YouTube a partir del CSV de Google Takeout
-utilizando Playwright y un navegador real (Brave / Chrome).
+Automates subscribing to YouTube channels from a Google Takeout CSV export
+using Playwright and a real browser (Brave / Chrome).
 """
 
 import argparse
@@ -21,7 +21,7 @@ DEFAULT_USER_DATA = "./.browser_data"
 DONE_FILE = "subscribed_channels.txt"
 
 def find_browser_executable(preferred="auto"):
-    """Localiza el ejecutable de Brave o Chrome según el sistema operativo."""
+    """Locates Brave or Google Chrome executable based on the operating system."""
     os_name = platform.system()
     
     candidates = []
@@ -70,8 +70,8 @@ def find_browser_executable(preferred="auto"):
 
 def load_channels(csv_path):
     if not os.path.exists(csv_path):
-        print(f"❌ Error: No se encuentra el archivo CSV en '{csv_path}'.")
-        print("   Asegúrate de copiar tu archivo 'subscriptions.csv' en este directorio o indicar la ruta con --csv.")
+        print(f"❌ Error: CSV file not found at '{csv_path}'.")
+        print("   Please copy your 'subscriptions.csv' here or specify the path with --csv.")
         return []
 
     channels = []
@@ -106,12 +106,12 @@ def is_logged_in(page):
         if "youtube.com" not in page.url:
             return False
         
-        # Presencia del botón o imagen del avatar en la barra superior
+        # Check avatar icon in masthead
         avatar = page.locator("#avatar-btn, button#avatar-btn, ytd-topbar-menu-button-renderer img#avatar")
         if avatar.count() > 0 and avatar.first.is_visible():
             return True
             
-        # Comprobar si el botón de inicio de sesión no existe pero sí el masthead
+        # Check if sign-in button is absent while header is present
         signin = page.locator("a[href*='ServiceLogin'], a[aria-label*='Sign in'], a[aria-label*='Acceder']")
         masthead = page.locator("ytd-masthead")
         if masthead.count() > 0 and masthead.first.is_visible() and signin.count() == 0:
@@ -134,20 +134,20 @@ def check_stdin():
 
 def wait_for_login(page, max_seconds=300):
     print("\n" + "="*65)
-    print("👉 Abre la ventana del navegador e INICIA SESIÓN en tu cuenta de YouTube.")
-    print("   El script detectará automáticamente el inicio de sesión.")
-    print("   (También puedes pulsar [ENTER] en esta terminal cuando estés dentro)")
+    print("👉 Open the browser window and SIGN IN to your YouTube account.")
+    print("   The script will automatically detect once you are logged in.")
+    print("   (You can also press [ENTER] in this terminal when ready)")
     print("="*65 + "\n")
     
     start_time = time.time()
     last_print = 0
     while time.time() - start_time < max_seconds:
         if check_stdin():
-            print("\n✅ Confirmación manual recibida.")
+            print("\n✅ Manual confirmation received.")
             return True
 
         if is_logged_in(page):
-            print("\n✅ ¡Sesión detectada automáticamente!")
+            print("\n✅ Logged in successfully!")
             return True
 
         time.sleep(1.5)
@@ -155,26 +155,26 @@ def wait_for_login(page, max_seconds=300):
         if elapsed - last_print >= 15:
             last_print = elapsed
             remaining = int(max_seconds - elapsed)
-            print(f"⏳ Esperando login... ({remaining}s restantes)")
+            print(f"⏳ Waiting for login... ({remaining}s remaining)")
             
-    print("⚠️ Tiempo límite de espera agotado.")
+    print("⚠️ Login timeout exceeded.")
     return False
 
 def subscribe_to_channel(page, channel):
     url = channel["url"]
     title = channel["title"] or url
-    print(f"\n📺 Canal: {title}")
+    print(f"\n📺 Processing channel: {title}")
     print(f"   URL: {url}")
     
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
     except Exception as e:
-        print(f"  ❌ Error cargando la página: {e}")
+        print(f"  ❌ Error loading page: {e}")
         return False
 
     page.wait_for_timeout(2500)
     
-    # 1. Comprobar si ya está suscrito
+    # 1. Check if already subscribed
     already_subscribed_selectors = [
         "button[aria-label*='Subscribed']",
         "button[aria-label*='Suscrito']",
@@ -189,20 +189,20 @@ def subscribe_to_channel(page, channel):
         try:
             loc = page.locator(sel)
             if loc.count() > 0 and loc.first.is_visible():
-                print(f"  ℹ️ Ya estás suscrito a este canal.")
+                print(f"  ℹ️ Already subscribed to this channel.")
                 return True
         except Exception:
             pass
 
-    # 2. Buscar botón de suscripción
+    # 2. Look for Subscribe button
     subscribe_selectors = [
-        "ytd-subscribe-button-renderer button:has-text('Suscribirse')",
         "ytd-subscribe-button-renderer button:has-text('Subscribe')",
-        "button[aria-label*='Suscribirse a']",
+        "ytd-subscribe-button-renderer button:has-text('Suscribirse')",
         "button[aria-label*='Subscribe to']",
+        "button[aria-label*='Suscribirse a']",
         "button[aria-label*='Suscribirme']",
-        "yt-button-shape button:has-text('Suscribirse')",
         "yt-button-shape button:has-text('Subscribe')",
+        "yt-button-shape button:has-text('Suscribirse')",
         "ytd-subscribe-button-renderer button",
     ]
 
@@ -217,29 +217,29 @@ def subscribe_to_channel(page, channel):
             pass
 
     if not btn:
-        print(f"  ⚠️ No se encontró el botón de suscripción (revisar URL o estado del canal).")
+        print(f"  ⚠️ Subscribe button not found (channel may be inactive or custom URL changed).")
         return False
 
     try:
         btn.click()
         page.wait_for_timeout(2000)
-        print(f"  🎉 ¡Suscripción realizada!")
+        print(f"  🎉 Subscribed successfully!")
         return True
     except Exception as e:
-        print(f"  ❌ Error al pulsar el botón: {e}")
+        print(f"  ❌ Failed to click subscribe button: {e}")
         return False
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Migrador de suscripciones de YouTube mediante CSV de Google Takeout y Playwright."
+        description="YouTube Subscriptions Migrator using Google Takeout CSV and Playwright."
     )
-    parser.add_argument("--csv", type=str, default=DEFAULT_CSV, help="Ruta al archivo CSV de suscripciones (defecto: subscriptions.csv).")
-    parser.add_argument("--limit", type=int, default=1, help="Número de canales a procesar en esta ejecución (defecto: 1 para modo prueba).")
-    parser.add_argument("--all", action="store_true", help="Procesar TODOS los canales pendientes.")
-    parser.add_argument("--delay-min", type=float, default=3.0, help="Espera mínima entre suscripciones en segundos (defecto: 3.0).")
-    parser.add_argument("--delay-max", type=float, default=6.0, help="Espera máxima entre suscripciones en segundos (defecto: 6.0).")
-    parser.add_argument("--browser", choices=["auto", "brave", "chrome", "chromium"], default="auto", help="Navegador preferido (defecto: auto).")
-    parser.add_argument("--user-data-dir", type=str, default=DEFAULT_USER_DATA, help="Directorio de perfil del navegador (defecto: ./.browser_data).")
+    parser.add_argument("--csv", type=str, default=DEFAULT_CSV, help="Path to subscriptions CSV file (default: subscriptions.csv).")
+    parser.add_argument("--limit", type=int, default=1, help="Number of channels to process in this run (default: 1 for test mode).")
+    parser.add_argument("--all", action="store_true", help="Process ALL remaining channels in the CSV.")
+    parser.add_argument("--delay-min", type=float, default=3.0, help="Minimum seconds to wait between subscriptions (default: 3.0).")
+    parser.add_argument("--delay-max", type=float, default=6.0, help="Maximum seconds to wait between subscriptions (default: 6.0).")
+    parser.add_argument("--browser", choices=["auto", "brave", "chrome", "chromium"], default="auto", help="Preferred browser (default: auto).")
+    parser.add_argument("--user-data-dir", type=str, default=DEFAULT_USER_DATA, help="Browser profile directory (default: ./.browser_data).")
     args = parser.parse_args()
 
     channels = load_channels(args.csv)
@@ -249,27 +249,27 @@ def main():
     completed_ids = load_completed_ids()
     remaining_channels = [c for c in channels if c["id"] not in completed_ids]
 
-    print(f"📊 Estado actual:")
-    print(f"   - Total canales en CSV: {len(channels)}")
-    print(f"   - Canales ya procesados: {len(completed_ids)}")
-    print(f"   - Canales pendientes: {len(remaining_channels)}")
+    print(f"📊 Current status:")
+    print(f"   - Total channels in CSV: {len(channels)}")
+    print(f"   - Already processed: {len(completed_ids)}")
+    print(f"   - Pending channels: {len(remaining_channels)}")
 
     if not remaining_channels:
-        print("✨ ¡Todos los canales ya han sido procesados previamente!")
+        print("✨ All channels have already been processed!")
         return
 
     channels_to_process = remaining_channels if args.all else remaining_channels[:args.limit]
-    mode_text = f"TODOS los canales restantes ({len(channels_to_process)})" if args.all else f"MODO PRUEBA (1 canal: {channels_to_process[0]['title']})"
-    print(f"🎯 Modo de ejecución: {mode_text}\n")
+    mode_text = f"ALL remaining channels ({len(channels_to_process)})" if args.all else f"TEST MODE (1 channel: {channels_to_process[0]['title']})"
+    print(f"🎯 Execution mode: {mode_text}\n")
 
     executable_path = None
     if args.browser != "chromium":
         executable_path = find_browser_executable(args.browser)
 
     if executable_path:
-        print(f"🌐 Navegador detectado: {executable_path}")
+        print(f"🌐 Detected browser: {executable_path}")
     else:
-        print("🌐 Navegador: Chromium gestionado por Playwright.")
+        print("🌐 Browser: Default Playwright Chromium.")
 
     user_data_path = Path(args.user_data_dir).resolve()
     user_data_path.mkdir(parents=True, exist_ok=True)
@@ -290,48 +290,48 @@ def main():
         context = p.chromium.launch_persistent_context(**launch_args)
         page = context.pages[0] if context.pages else context.new_page()
 
-        print("Navegando a YouTube...")
+        print("Navigating to YouTube...")
         page.goto("https://www.youtube.com", wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
 
-        # Aceptar cookies si aparece banner
+        # Accept cookies if banner is present
         try:
-            consent_btn = page.locator("button:has-text('Aceptar todo'), button:has-text('Accept all'), button:has-text('Rechazar todo'), button:has-text('Reject all')")
+            consent_btn = page.locator("button:has-text('Accept all'), button:has-text('Aceptar todo'), button:has-text('Reject all'), button:has-text('Rechazar todo')")
             if consent_btn.count() > 0 and consent_btn.first.is_visible():
                 consent_btn.first.click()
                 page.wait_for_timeout(1000)
         except Exception:
             pass
 
-        # Comprobar o esperar inicio de sesión
+        # Check or wait for user login
         if not is_logged_in(page):
             if not wait_for_login(page, max_seconds=300):
-                print("❌ No se inició sesión. Cerrando navegador...")
+                print("❌ Login was not completed. Closing browser...")
                 context.close()
                 return
         else:
-            print("✅ Sesión ya activa en este perfil de navegador.")
+            print("✅ Active session found in browser profile.")
 
-        print("\n🚀 Comenzando proceso de suscripción...")
+        print("\n🚀 Starting subscription process...")
         for idx, channel in enumerate(channels_to_process, 1):
             print(f"\n[{idx}/{len(channels_to_process)}]", end=" ")
             success = subscribe_to_channel(page, channel)
             if success:
                 mark_completed(channel["id"])
             
-            # Pausa aleatoria entre canales si quedan más por procesar
+            # Random delay between channels
             if idx < len(channels_to_process):
                 delay = random.uniform(args.delay_min, args.delay_max)
-                print(f"⏳ Pausa de seguridad de {delay:.1f}s...")
+                print(f"⏳ Safety pause of {delay:.1f}s...")
                 time.sleep(delay)
 
         print("\n" + "="*65)
         if not args.all and len(remaining_channels) > len(channels_to_process):
-            print(f"🏁 Prueba completada ({len(channels_to_process)} canal procesado).")
-            print("Si la prueba ha funcionado, ejecuta el resto con:")
+            print(f"🏁 Test completed ({len(channels_to_process)} channel processed).")
+            print("If the test succeeded, process all remaining channels by running:")
             print("  python subscribe.py --all")
         else:
-            print("🎉 ¡Todos los canales seleccionados han sido procesados!")
+            print("🎉 All selected channels have been processed!")
         print("="*65)
 
         page.wait_for_timeout(3000)

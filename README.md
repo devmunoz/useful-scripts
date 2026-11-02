@@ -1,11 +1,11 @@
 # useful-scripts
 
-Colección de scripts y herramientas útiles para administración de sistemas y automatización.
+A curated collection of practical scripts and automation tools for system administration and daily workflows.
 
-## Herramientas incluidas
+## Included Tools
 
-- **[youtube-takeout-resubscribe](youtube-takeout-resubscribe/)**: Automatización con Playwright para migrar suscripciones de YouTube a una nueva cuenta usando el CSV de Google Takeout.
-- **[check_vulns](check_vulns/)**: Utilidad para comprobación de vulnerabilidades.
-- **[filecopier](filecopier/)**: Sincronización inteligente de archivos (`smart_file_sync.sh` y cron).
-- **addsamba.sh**: Script para configuración rápida de recursos compartidos Samba.
-- **fsrwspeedtest.sh**: Medición de velocidad de lectura y escritura en sistemas de archivos.
+- **[youtube-takeout-resubscribe](youtube-takeout-resubscribe/)**: Python & Playwright automation to transfer YouTube subscriptions from a Google Takeout CSV export to a new account.
+- **[check_vulns](check_vulns/)**: Vulnerability scanning utility.
+- **[filecopier](filecopier/)**: Smart file synchronization (`smart_file_sync.sh` and cron wrapper).
+- **addsamba.sh**: Quick Samba share configuration helper.
+- **fsrwspeedtest.sh**: Filesystem read and write benchmark script.
